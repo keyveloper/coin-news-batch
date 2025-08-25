@@ -3,7 +3,7 @@
 # ================================
 $mongoConn = "mongodb://127.0.0.1:27017/local"
 $collection = "pivot.log"
-$days_before = 1
+$days_before = 3
 
 # ================================
 # 1. 최신 pivot_date 읽기
@@ -38,7 +38,7 @@ Write-Host "Next batch pivot_date:" $pivot_date
 # ================================
 # 3. FastAPI Batch 실행
 # ================================
-$url = "http://localhost:8000/test/batch?pivot_date=$pivot_date&days_before=$days_before"
+$url = "http://localhost:8000/api/v1/test/batch?pivot_date=$pivot_date&days_before=$days_before"
 
 Write-Host "Calling API:" $url
 $result = Invoke-RestMethod -Method POST -Uri $url -Headers @{
@@ -46,15 +46,4 @@ $result = Invoke-RestMethod -Method POST -Uri $url -Headers @{
 }
 
 Write-Host "Batch result:" $result.message
-
-# ================================
-# 4. 새로운 pivot_date 저장
-# ================================
-mongosh $mongoConn --quiet --eval `
-"db.getCollection('$collection').insertOne({
-    batch_name: 'tokenpost',
-    pivot_date: '$pivot_date',
-    created_at: new Date()
-});"
-
 Write-Host "pivot_date saved to MongoDB: $pivot_date"
