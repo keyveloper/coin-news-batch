@@ -10,7 +10,7 @@ $days_before = 3
 # ================================
 $latest_pivot = mongosh $mongoConn --quiet --eval `
 "var d = db.getCollection('$collection')
-           .find({})
+           .find({ batch_name: 'tokenpost' })
            .sort({ pivot_date: 1 })
            .limit(1)
            .toArray();
