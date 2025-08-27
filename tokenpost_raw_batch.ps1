@@ -11,12 +11,10 @@ $days_before = 3
 $latest_pivot = mongosh $mongoConn --quiet --eval `
 "var d = db.getCollection('$collection')
            .find({})
-           .sort({created_at:-1})
+           .sort({ pivot_date: 1 })
            .limit(1)
            .toArray();
  d.length > 0 ? d[0].pivot_date : ''"
-
-Write-Host "Latest pivot_date from DB:" $latest_pivot
 
 # ================================
 # 2. pivot_date 계산
