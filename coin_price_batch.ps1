@@ -38,25 +38,33 @@ Write-Host "Symbol:" $symbol
 # ================================
 # 3. FastAPI Batch 실행
 # ================================
-$url = "http://localhost:8000/api/v1/batch/price?query=$symbol&time=$pivot_date"
+$url = "http://localhost:8001/api/v1/batch/price?query=$symbol&time=$pivot_date"
 
 Write-Host "Calling API:" $url
-$result = Invoke-RestMethod -Method POST -Uri $url -Headers @{
-    "Content-Type" = "application/json"
+
+try {
+    $result = Invoke-RestMethod -Method POST -Uri $url -Headers @{
+        "Content-Type" = "application/json"
+    }
+
+    Write-Host "Batch result:" ($result | ConvertTo-Json)
+    Write-Host "Price data fetched for symbol: $symbol, pivot_date: $pivot_date"
+
+    # ================================
+    # 4. MongoDB에 pivot_date 업데이트 (API 성공 시에만)
+    # ================================
+    mongosh $mongoConn --quiet --eval `
+    "db.getCollection('$collection').insertOne({
+        batch_name: 'coin_price',
+        symbol: '$symbol',
+        pivot_date: '$pivot_date',
+        created_at: new Date()
+    })"
+
+    Write-Host "pivot_date saved to MongoDB: $pivot_date"
 }
-
-Write-Host "Batch result:" ($result | ConvertTo-Json)
-Write-Host "Price data fetched for symbol: $symbol, pivot_date: $pivot_date"
-
-# ================================
-# 4. MongoDB에 pivot_date 업데이트
-# ================================
-mongosh $mongoConn --quiet --eval `
-"db.getCollection('$collection').insertOne({
-    batch_name: 'coin_price',
-    symbol: '$symbol',
-    pivot_date: '$pivot_date',
-    created_at: new Date()
-})"
-
-Write-Host "pivot_date saved to MongoDB: $pivot_date"
+catch {
+    Write-Host "API call failed. pivot_date NOT saved to MongoDB."
+    Write-Host "Error: $_"
+    exit 1
+}
